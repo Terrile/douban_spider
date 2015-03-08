@@ -13,6 +13,8 @@ from ..items import Book #this is the way to import code from parent directory
 import os
 #set default encoding
 import sys
+#import pprint
+from pprint import pprint
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
@@ -21,47 +23,98 @@ class BookSpider(scrapy.Spider):
     allowed_domains = ["douban.com"]
     start_urls = [
         "http://book.douban.com/subject/25752043/"
-        #"http://club.jd.com/allconsultations/1258277-2-2.html"
     ]
 
     def parse(self, response):
         html_txt = response.body.decode("utf-8","ignore")
         hxs = Selector(text=html_txt)
+        book = Book()
         try:
-            #products = hxs.select('//div[@class="lh-wrap"]/div[@class="p-name"]/a/@href')
             book_node = hxs.xpath('//div[@id="wrapper"]')
             title_node = book_node.xpath('.//h1/span/text()')
-            #print title_node.extract()[0]
             info_node = book_node.xpath('.//div[@id="info"]')
             info_text = info_node.extract()[0]
-            #info_text = re.sub(r"\s+","\s")
-            #print info_text
             lines = string.split(info_text,'<br>')
-            inbracket = re.compile(r".*<[^<>]+>.*")
+            inbracket = re.compile(r"<[^<>]+>")
             for line in lines:
                 line = string.replace(line,'\n','')
-                #line = re.sub(inbracket,'',line)
-                print line
+                line = re.sub(inbracket,'',line)
+                line = re.sub(r'\s+',' ',line)
+                field,value = self.extract_info(line)
+                if field==u'作者':
+                    book['authors'] = value
+                elif field==u'出版社':
+                    book['publisher'] = value
+                elif field==u'原作名':
+                    book['title_english'] = value
+                elif field==u'译者':
+                    book['translator'] = value
+                elif field==u'出版年':
+                    book['publisher'] = value
+                elif field==u'页数':
+                    book['page_num'] = value
+                elif field==u'定价':
+                    book['price'] = value
+                elif field==u'丛书':
+                    book['album'] = value
+                elif field=='ISBN':
+                    book['isbn'] = value
+                else:
+                    if field!="" and value!="":
+                        book['other_info'] = field+":"+value
 
-            test_nodes = info_node.xpath(".//span[@class='pl']/text()")
-            for test_node in test_nodes:
-                print test_node.extract()
-            #print info_node.extract()[0]
-            author_node = info_node.xpath('.//div[contains(text(),"作者")]')
-            if author_node:
-                print "Author"
-                print author_node.extract()[0]
+            rating_node = book_node.xpath('.//div[@id="interest_sectl"]/div/p/strong/text()')
+            if rating_node:
+                book['rating'] = string.strip(rating_node.extract()[0])
             else:
-                print "Author Node not found"
+                print "score node not found"
+
 
             book_title_path = '//div[@id="wrapper"]/h1/span/text()'
             book_title_node = hxs.xpath(book_title_path)
             if book_title_node:
-                book_title = book_title_node.extract()[0]
-                print book_title
+                book['title'] = book_title_node.extract()[0]
             else:
                 print "cannot find book title node"
-        except:
+
+            img_path = '//div[@id="mainpic"]/a/img/@src'
+            img_node = hxs.xpath(img_path)
+            if img_node:
+                img_src = img_node.extract()[0]
+                book['img'] = img_src
+            else:
+                print "cannot find book img"
+            #extract introduction
+            intro_nodes = hxs.xpath('//span[@class="all hidden"]/div/div[@class="intro"]/p/text()')
+            if intro_nodes:
+                book['intro'] = [i.extract() for i in intro_nodes]
+            else:
+                print "intro nodes not found"
+            #extract content list
+            content_list_xpath = '//h2/span[contains(text(),'+u'"目录")]/../following-sibling::*[@class="indent" and @style="display:none"]/text()'
+            content_nodes = hxs.xpath(content_list_xpath)
+            if content_nodes:
+                book['content_list'] = [i.extract() for i in content_nodes]
+            pprint(book)
+        except Exception,e:
             print 'Exception Happened'
-            pass
+            print e
+            raise
+
+
+    def extract_info(self, line):
+        if not line:
+            return "",""
+        line = string.strip(line)
+        if not line:
+            return "",""
+
+        pos = string.index(line,':')
+        if not pos or pos<0:
+            return "",""
+        field = line[:pos]
+        #print "Field: "+field
+        value = line[pos+2:]
+        #print "Value: "+value
+        return field,value
 
