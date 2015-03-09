@@ -9,21 +9,22 @@ import scrapy
 from scrapy.item import  Item,Field
 class Book(scrapy.Item):
     title = Field()
-    isbn = Field()
-    authors = Field()
-    publisher = Field()
+    title_english = Field()
     alias = Field()
-    english_name = Field()
-    douban_url = Field()
-    img = Field()
-    publish_date = Field()
+    authors = Field()
+    translator = Field()
+    isbn = Field()
+    publisher = Field()
+    release_year = Field()
     page_num = Field()
     price = Field()
-    staring = Field()
-    desc = Field()
+    album = Field()
+    douban_url = Field()
+    img = Field()
+    rating= Field()
+    other_info = Field()
+    intro = Field()
     content_list = Field()
-    tags = Field()
-
 class DoubanSpiderItem(scrapy.Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
