@@ -22,10 +22,27 @@ class BookSpider(scrapy.Spider):
     name = "bookspider"
     allowed_domains = ["douban.com"]
     start_urls = [
-        "http://book.douban.com/subject/25752043/"
+        #"http://book.douban.com/subject/25752043/"
+        u'http://book.douban.com/tag/%E4%BA%92%E8%81%94%E7%BD%91?start=0&type=T'
     ]
 
     def parse(self, response):
+        html_txt = response.body.decode("utf-8","ignore")
+        hxs = Selector(text=html_txt)
+        try:
+            #items = hxs.xpath('//ul[@class="subject-list"]/li[@class="subject-item"]/info/h2/a/@href')
+            items = hxs.xpath('//ul[@class="subject-list"]/li[@class="subject-item"]/div/h2/a/@href')
+            if items:
+                for item in items:
+                    #print item.extract()
+                    yield Request(url=item.extract(),callback=self.parse_book)
+            else:
+                print 'not find items'
+        except Exception,e:
+            print e
+            raise
+
+    def parse_book(self, response):
         html_txt = response.body.decode("utf-8","ignore")
         hxs = Selector(text=html_txt)
         book = Book()
