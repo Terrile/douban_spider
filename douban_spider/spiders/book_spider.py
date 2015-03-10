@@ -28,14 +28,22 @@ class BookSpider(scrapy.Spider):
 
     def parse(self, response):
         html_txt = response.body.decode("utf-8","ignore")
+        url = response.url
         hxs = Selector(text=html_txt)
         try:
             #items = hxs.xpath('//ul[@class="subject-list"]/li[@class="subject-item"]/info/h2/a/@href')
             items = hxs.xpath('//ul[@class="subject-list"]/li[@class="subject-item"]/div/h2/a/@href')
             if items:
                 for item in items:
-                    #print item.extract()
                     yield Request(url=item.extract(),callback=self.parse_book)
+                m = re.search(r'start=(\d+)',url)
+                if m:
+                    page_no = int(m.group(1)) + 1
+                    print 'Page: '+ str(page_no)+' is processed'
+                    next_page = u'http://book.douban.com/tag/%E4%BA%92%E8%81%94%E7%BD%91?start='+str(page_no)+u'&type=T'
+                    yield Request(url=next_page,callback=self.parse)
+                else:
+                    print 'invalid input url'
             else:
                 print 'not find items'
         except Exception,e:
@@ -112,7 +120,8 @@ class BookSpider(scrapy.Spider):
             content_nodes = hxs.xpath(content_list_xpath)
             if content_nodes:
                 book['content_list'] = [i.extract() for i in content_nodes]
-            pprint(book)
+            #pprint(book)
+            yield book
         except Exception,e:
             print 'Exception Happened'
             print e
