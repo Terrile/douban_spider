@@ -143,5 +143,4 @@ class BookSpider(scrapy.Spider):
         value = line[pos+2:]
         #print "Value: "+value
         return field,value
-#end
 
