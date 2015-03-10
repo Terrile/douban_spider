@@ -7,9 +7,11 @@
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy import signals
 from scrapy.contrib.exporter import JsonItemExporter
+import codecs
 import json
 class DoubanSpiderPipeline(object):
     def __init__(self):
+        #file = codecs.open('books2.json','w+b',encoding='utf-8')
         file = open('books2.json','w+b')
         self.exporter = JsonItemExporter(file)
         self.exporter.start_exporting()
