@@ -9,16 +9,32 @@ from scrapy import signals
 from scrapy.contrib.exporter import JsonItemExporter
 import codecs
 import json
+
 class DoubanSpiderPipeline(object):
     def __init__(self):
-        #file = codecs.open('books2.json','w+b',encoding='utf-8')
-        file = open('books2.json','w+b')
+        file = codecs.open('books2.json','w+b',encoding='utf-8')
+        #file = open('books2.json','w+b')
         self.exporter = JsonItemExporter(file)
+        self.exporter.encoding='utf-8'
         self.exporter.start_exporting()
+        self.encoder = json.JSONEncoder(ensure_ascii=False)
 
     def spider_closed(self,spider):
         self.exporter.finish_exporting()
 
     def process_item(self, item, spider):
-        self.exporter.export_item(item)
+        self.exporter.export_item(self.encoder.encode(item))
         return item
+
+class JsonWithEncodingPipeline(object):
+
+    def __init__(self):
+        self.file = codecs.open('books.json', 'w', encoding='utf-8')
+
+    def process_item(self, item, spider):
+        line = json.dumps(dict(item), ensure_ascii=False) + "\n"
+        self.file.write(line)
+        return item
+
+    def spider_closed(self, spider):
+        self.file.close()

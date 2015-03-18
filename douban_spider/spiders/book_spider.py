@@ -9,10 +9,12 @@ import string
 import re
 import math
 import urllib
+from scrapy import log
 from ..items import Book #this is the way to import code from parent directory
 import os
 #set default encoding
 import sys
+import time
 #import pprint
 from pprint import pprint
 reload(sys)
@@ -29,6 +31,10 @@ class BookSpider(scrapy.Spider):
 
     def parse(self, response):
         try:
+            if response.status == 403:
+                time.sleep(10)
+                log.msg("MISSED URL: "+str(response.url),level=log.WARNING)
+                pass
             html_txt = response.body.decode("utf-8","ignore")
             url = response.url
             hxs = Selector(text=html_txt)
@@ -59,6 +65,8 @@ class BookSpider(scrapy.Spider):
             book_node = hxs.xpath('//div[@id="wrapper"]')
             title_node = book_node.xpath('.//h1/span/text()')
             info_node = book_node.xpath('.//div[@id="info"]')
+            if not info_node:
+                pass
             info_text = info_node.extract()[0]
             lines = string.split(info_text,'<br>')
             inbracket = re.compile(r"<[^<>]+>")
@@ -76,7 +84,7 @@ class BookSpider(scrapy.Spider):
                 elif field==u'译者':
                     book['translator'] = value
                 elif field==u'出版年':
-                    book['publisher'] = value
+                    book['release_year'] = value
                 elif field==u'页数':
                     book['page_num'] = value
                 elif field==u'定价':
