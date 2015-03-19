@@ -5,4 +5,4 @@ import string
 __author__ = 'Min'
 
 if __name__ == "__main__":
-    cmdline.execute("scrapy crawl bookspider".split())
+    cmdline.execute("scrapy crawl bookspider --logfile=log.txt".split())

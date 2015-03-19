@@ -62,6 +62,10 @@ class BookSpider(scrapy.Spider):
         hxs = Selector(text=html_txt)
         book = Book()
         try:
+            if response.status == 403:
+                time.sleep(60*5)
+                log.msg("MISSED URL: "+str(response.url),level=log.WARNING)
+                pass
             book_node = hxs.xpath('//div[@id="wrapper"]')
             title_node = book_node.xpath('.//h1/span/text()')
             info_node = book_node.xpath('.//div[@id="info"]')
