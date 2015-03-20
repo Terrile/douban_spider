@@ -1,0 +1,34 @@
+How to avoid banned:
+
+1.https://groups.google.com/forum/#!msg/scrapy-users/WqMLnKbA43I/B3N1ysvoy-4J
+You would have to install tor and polipo from packages and write simple middleware which forces tor to change route when scrapy retrying to recieve page:
+
+class RetryChangeProxyMiddleware(RetryMiddleware):
+    def _retry(self, request, reason, spider):
+        log.msg('Changing proxy')
+        tn = telnetlib.Telnet('127.0.0.1', 9051)
+        tn.read_until("Escape character is '^]'.", 2)
+        tn.write('AUTHENTICATE "267765"\r\n')
+        tn.read_until("250 OK", 2)
+        tn.write("signal NEWNYM\r\n")
+        tn.read_until("250 OK", 2)
+        tn.write("quit\r\n")
+        tn.close()
+        time.sleep(3)
+        log.msg('Proxy changed')
+        return RetryMiddleware._retry(self, request, reason, spider)
+
+then use it in settings.py:
+
+DOWNLOADER_MIDDLEWARE = {
+                         'spider.middlewares.RetryChangeProxyMiddleware': 600,
+                         }
+
+and then you just want to send requests through local tor proxy (polipo) which could be done with:
+tsocks scrapy crawl spirder
+
+I've done this long ago but this solution seems ok and, most important, it works
+
+2. http://pkmishra.github.io/blog/2013/03/18/how-to-run-scrapy-with-TOR-and-multiple-browser-agents-part-1-mac/
+
+3. http://doc.scrapy.org/en/latest/topics/practices.html#bans

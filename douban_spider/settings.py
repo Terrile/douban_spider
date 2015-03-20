@@ -17,6 +17,7 @@ DOWNLOADER_MIDDLEWARES = {
         'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware' : None,
         'douban_spider.rotate_useragent.RotateUserAgentMiddleware' :400
     }
-DOWNLOAD_DELAY = 0.5
+DOWNLOAD_DELAY = 2
+COOKIES_ENABLED = False
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'douban_spider (+http://www.yourdomain.com)'
