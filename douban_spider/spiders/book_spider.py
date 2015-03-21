@@ -68,6 +68,7 @@ class BookSpider(scrapy.Spider):
                     page_no = int(m.group(1)) + 20
                     log.msg('Book: '+ str(page_no)+' is processed',level=log.INFO)
                     next_page = u'http://book.douban.com/tag/%E4%BA%92%E8%81%94%E7%BD%91?start='+str(page_no)+u'&type=T'
+                    #debug
                     yield Request(url=next_page,callback=self.parse)
                 else:
                     log.msg('Invalid url '+str(response.url),level=log.WARNING)

@@ -25,6 +25,9 @@ class Book(scrapy.Item):
     other_info = Field()
     intro = Field()
     content_list = Field()
+    #supress logs
+    def __str__(self):
+        return ""
 
 class BookSnippet(scrapy.Item):
     title = Field()
@@ -33,6 +36,9 @@ class BookSnippet(scrapy.Item):
     img = Field()
     rating = Field()
     reviews = Field()
+    #supress logs
+    def __str__(self):
+        return ""
 
 class DoubanSpiderItem(scrapy.Item):
     # define the fields for your item here like:
