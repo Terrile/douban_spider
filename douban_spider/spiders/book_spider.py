@@ -11,6 +11,7 @@ import math
 import urllib
 from scrapy import log
 from ..items import Book #this is the way to import code from parent directory
+from ..items import BookSnippet
 import os
 #set default encoding
 import sys
@@ -25,7 +26,6 @@ class BookSpider(scrapy.Spider):
     name = "bookspider"
     allowed_domains = ["douban.com"]
     start_urls = [
-        #"http://book.douban.com/subject/25752043/"
         u'http://book.douban.com/tag/%E4%BA%92%E8%81%94%E7%BD%91?start=0&type=T'
     ]
 
@@ -38,23 +38,43 @@ class BookSpider(scrapy.Spider):
             html_txt = response.body.decode("utf-8","ignore")
             url = response.url
             hxs = Selector(text=html_txt)
-            #items = hxs.xpath('//ul[@class="subject-list"]/li[@class="subject-item"]/info/h2/a/@href')
-            items = hxs.xpath('//ul[@class="subject-list"]/li[@class="subject-item"]/div/h2/a/@href')
+            #items = hxs.xpath('//ul[@class="subject-list"]/li[@class="subject-item"]/div/h2/a/@href')
+            items = hxs.xpath('//ul[@class="subject-list"]/li[@class="subject-item"]')
             if items:
                 for item in items:
-                    yield Request(url=item.extract(),callback=self.parse_book)
+                    snippet = BookSnippet()
+                    pic = item.xpath('./div[@class="pic"]/a/@href')
+                    if pic:
+                        snippet['img']=pic.extract()[0]
+                    title = item.xpath('./div[@class="info"]/h2/a')
+                    if title:
+                        link = title.xpath('./@href')
+                        snippet['url'] = link.extract()[0]
+                        title_txt = title.xpath('./text()')
+                        snippet['title'] = title_txt.extract()[0]
+                    pub = item.xpath('./div[@class="info"]/div[@class="pub"]/text()')
+                    if pub:
+                        snippet['pubinfo']=pub.extract()
+                    rating = item.xpath('./*/span[@class="rating_nums"]/text()')
+                    if rating:
+                        snippet['rating'] = rating.extract()[0]
+                    yield snippet
+                    snippet_url = snippet['url']
+                    if snippet_url:
+                        log.msg('send request '+str(snippet_url))
+                        yield Request(url=snippet_url,callback=self.parse_book)
                 m = re.search(r'start=(\d+)',url)
                 if m:
                     page_no = int(m.group(1)) + 20
-                    print 'Page: '+ str(page_no)+' is processed'
+                    log.msg('Book: '+ str(page_no)+' is processed',level=log.INFO)
                     next_page = u'http://book.douban.com/tag/%E4%BA%92%E8%81%94%E7%BD%91?start='+str(page_no)+u'&type=T'
                     yield Request(url=next_page,callback=self.parse)
                 else:
-                    print 'invalid input url'
+                    log.msg('Invalid url '+str(response.url),level=log.WARNING)
             else:
-                print 'not find items'
+                log.msg('Not found items '+str(response.url),level=log.WARNING)
         except Exception,e:
-            print e
+            log.msg(str(e),level=log.WARNING)
             raise
 
     def parse_book(self, response):
@@ -64,13 +84,15 @@ class BookSpider(scrapy.Spider):
         try:
             if response.status == 403:
                 time.sleep(60*5)
-                log.msg("MISSED URL: "+str(response.url),level=log.WARNING)
+                log.msg("FAILURE 403 RESPONSE: "+str(response.url),level=log.ERROR);
                 pass
             book_node = hxs.xpath('//div[@id="wrapper"]')
             title_node = book_node.xpath('.//h1/span/text()')
             info_node = book_node.xpath('.//div[@id="info"]')
             if not info_node:
+                log.msg("FAILURE NO INFO NODE: "+str(response.url),level=log.ERROR);
                 pass
+            book['douban_url'] = response.url
             info_text = info_node.extract()[0]
             lines = string.split(info_text,'<br>')
             inbracket = re.compile(r"<[^<>]+>")
@@ -134,6 +156,7 @@ class BookSpider(scrapy.Spider):
             if content_nodes:
                 book['content_list'] = [i.extract() for i in content_nodes]
             #pprint(book)
+            log.msg('SUCCEED BOOK: '+str(response.url),log.INFO)
             yield book
         except Exception,e:
             print 'Exception Happened'

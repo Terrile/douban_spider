@@ -7,6 +7,8 @@
 from scrapy.xlib.pydispatch import dispatcher
 from scrapy import signals
 from scrapy.contrib.exporter import JsonItemExporter
+from items import Book
+from items import BookSnippet
 import codecs
 import json
 
@@ -27,14 +29,28 @@ class DoubanSpiderPipeline(object):
         return item
 
 class JsonWithEncodingPipeline(object):
-
     def __init__(self):
-        self.file = codecs.open('books.json', 'w', encoding='utf-8')
+        self.book_store = codecs.open('books.json', 'w', encoding='utf-8')
+        self.snippet_store = codecs.open('snippets.json', 'w', encoding='utf-8')
 
     def process_item(self, item, spider):
+        if isinstance(item,Book):
+            return self.process_book(item,spider)
+        elif isinstance(item,BookSnippet):
+            return self.process_snippet(item,spider)
+        else:
+            return item
+
+    def process_book(self,item, spider):
         line = json.dumps(dict(item), ensure_ascii=False) + "\n"
-        self.file.write(line)
+        self.book_store.write(line)
+        return item
+
+    def process_snippet(self,item,spider):
+        line = json.dumps(dict(item), ensure_ascii=False) + "\n"
+        self.snippet_store.write(line)
         return item
 
     def spider_closed(self, spider):
-        self.file.close()
+        self.book_store.close()
+        self.snippet_store.close()

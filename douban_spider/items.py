@@ -25,6 +25,15 @@ class Book(scrapy.Item):
     other_info = Field()
     intro = Field()
     content_list = Field()
+
+class BookSnippet(scrapy.Item):
+    title = Field()
+    url = Field()
+    pubinfo = Field()
+    img = Field()
+    rating = Field()
+    reviews = Field()
+
 class DoubanSpiderItem(scrapy.Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
