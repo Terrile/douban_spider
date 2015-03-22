@@ -44,7 +44,7 @@ class BookSpider(scrapy.Spider):
                 for item in items:
                     tag = item.extract()
                     tag = tag[2:]
-                    #tag = tag.encode('utf-8')
+                    #construct the start url for each tag
                     tag_url = 'http://book.douban.com/tag/'+tag+'?start=0&type=T'
                     log.msg('send out request for url: '+tag_url)
                     yield Request(url=tag_url,callback=self.parse_list)
