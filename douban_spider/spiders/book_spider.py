@@ -186,11 +186,20 @@ class BookSpider(scrapy.Spider):
             log.msg('SUCCEED BOOK: '+str(response.url),log.INFO)
             yield book
             #start to extract related book here
+            self.parse_related_book(hxs)
         except Exception,e:
             print 'Exception Happened'
             print e
             raise
 
+    def parse_related_book(self,selector):
+        items = selector.xpath('//a/@href')
+        if items:
+            for item in items:
+                book_url = item.extract()
+                if re.match('http:\/\/book\.douban\.com\/subject\/\d+\/',book_url):
+                    log.msg('RELATED BOOK: '+str(book_url))
+                    yield Request(url=book_url,callback=self.parse_book)
 
     def extract_info(self, line):
         if not line:
