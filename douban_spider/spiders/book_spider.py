@@ -45,7 +45,7 @@ class BookSpider(scrapy.Spider):
                     tag = item.extract()
                     tag = tag[2:]
                     #tag = tag.encode('utf-8')
-                    tag_url = 'http://book.douban.com/tag/'+tag
+                    tag_url = 'http://book.douban.com/tag/'+tag+'?start=0&type=T'
                     log.msg('send out request for url: '+tag_url)
                     yield Request(url=tag_url,callback=self.parse_list)
             else:
@@ -185,8 +185,8 @@ class BookSpider(scrapy.Spider):
             #pprint(book)
             log.msg('SUCCEED BOOK: '+str(response.url),log.INFO)
             yield book
-            #start to extract related book here
             self.parse_related_book(hxs)
+            #start to extract related book here
         except Exception,e:
             print 'Exception Happened'
             print e
