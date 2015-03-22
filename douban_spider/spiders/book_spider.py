@@ -26,10 +26,36 @@ class BookSpider(scrapy.Spider):
     name = "bookspider"
     allowed_domains = ["douban.com"]
     start_urls = [
-        u'http://book.douban.com/tag/%E4%BA%92%E8%81%94%E7%BD%91?start=0&type=T'
+        #u'http://book.douban.com/tag/%E4%BA%92%E8%81%94%E7%BD%91?start=0&type=T'
+        u'http://book.douban.com/tag/'
     ]
 
     def parse(self, response):
+        try:
+            log.msg('start to parse url: '+str(response.url))
+            if response.status == 403:
+                time.sleep(10)
+                log.msg("MISSED URL: "+str(response.url),level=log.WARNING)
+                pass
+            html_txt = response.body.decode("utf-8","ignore")
+            hxs = Selector(text=html_txt)
+            items = hxs.xpath('//table/tbody/tr/td/a/@href')
+            if items:
+                for item in items:
+                    tag = item.extract()
+                    tag = tag[2:]
+                    #tag = tag.encode('utf-8')
+                    tag_url = 'http://book.douban.com/tag/'+tag
+                    log.msg('send out request for url: '+tag_url)
+                    yield Request(url=tag_url,callback=self.parse_list)
+            else:
+                log.msg('no tag url found in start page',level=log.CRITICAL)
+        except Exception,e:
+            log.msg('failed to parse url: '+str(response.url))
+            log.msg(str(e))
+            raise
+
+    def parse_list(self, response):
         try:
             if response.status == 403:
                 time.sleep(10)
@@ -65,11 +91,11 @@ class BookSpider(scrapy.Spider):
                         yield Request(url=snippet_url,callback=self.parse_book)
                 m = re.search(r'start=(\d+)',url)
                 if m:
-                    page_no = int(m.group(1)) + 20
-                    log.msg('Book: '+ str(page_no)+' is processed',level=log.INFO)
-                    next_page = u'http://book.douban.com/tag/%E4%BA%92%E8%81%94%E7%BD%91?start='+str(page_no)+u'&type=T'
-                    #debug
-                    yield Request(url=next_page,callback=self.parse)
+                    book_num = int(m.group(1)) + 20
+                    log.msg('Book: '+ str(book_num)+' is processed',level=log.INFO)
+                    next_page = u'http://book.douban.com/tag/%E4%BA%92%E8%81%94%E7%BD%91?start='+str(book_num)+u'&type=T'
+                    if book_num<1000:
+                        yield Request(url=next_page,callback=self.parse_list)
                 else:
                     log.msg('Invalid url '+str(response.url),level=log.WARNING)
             else:
@@ -159,6 +185,7 @@ class BookSpider(scrapy.Spider):
             #pprint(book)
             log.msg('SUCCEED BOOK: '+str(response.url),log.INFO)
             yield book
+            #start to extract related book here
         except Exception,e:
             print 'Exception Happened'
             print e
